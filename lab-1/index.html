@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- SOLID: Interface Segregation Principle - Не використовується в коді, оскільки JavaScript не має конкретної підтримки для цього принципу -->
+    <!-- DRY: Код структурований таким чином, що уникнуте повторення коду -->
+    <!-- KISS: Код має просту структуру і легко зрозумітий -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documents Display</title>
+    <!-- Single Responsibility Principle: Кожен стиль відповідає за конкретний аспект дизайну -->
+    <style>
+        body {
+            font-family: "Times New Roman";
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            font-size: 28px;
+            color: #333;
+        }
+        #documents-container {
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        .document {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 10px auto;
+            width: 200px;
+            text-align: left;
+            display: inline-block;
+            cursor: grab;
+            transition: transform 0.3s ease;
+        }
+        .document:hover {
+            transform: translateY(-5px);
+        }
+        .document img {
+            display: block;
+            margin: 0 auto 10px;
+            max-width: 150px;
+            border-radius: 10%;
+        }
+        .document p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .document button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .document button:hover {
+            background-color: #39833c;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            font-family: "Times New Roman";
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border: 2px solid #165d16;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #39833c;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+            font-family: "Times New Roman";
+            border: 2px solid #165d16;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+<h1>Цифрові документи</h1>
+<div id="documents-container"></div>
+<button id="asc-btn">↑</button>
+<button id="desc-btn">↓</button>
+<select id="display-type">
+    <option value="flex">По горизонталі</option>
+    <option value="block">По вертикалі</option>
+</select>
+<script>
+    // SOLID: Single Responsibility Principle
+    // Program to Interfaces not Implementations
+    class Document {
+        constructor(name, expiryDate, photoUrl) {
+            this.name = name;
+            this.expiryDate = expiryDate;
+            this.photoUrl = photoUrl;
+        }
+        // Fail Fast
+        display() {
+            throw new Error("Method 'display' must be implemented by subclasses");
+        }
+        generateDocumentDisplay(details) {
+            return `<div class="document" draggable="true" ondragstart="drag(event)"><img src="${this.photoUrl}" alt="Photo"><br>Ім'я: ${this.name}<br>Термін придатності: ${this.expiryDate}<br>${details.join("<br>")}</div>`;
+        }
+        generateHideInfoButton() {
+            return `<button onclick="hideInfo()">Сховати</button>`;
+        }
+    }
+    // SOLID: Single Responsibility Principle
+    // SOLID: Liskov Substitution Principle
+    class Passport extends Document {
+        constructor(name, expiryDate, country, idCode, photoUrl) {
+            super(name, expiryDate, photoUrl);
+            this.country = country;
+            this.idCode = idCode;
+            this.infoVisible = false;
+        }
+        display() {
+            const info = this.infoVisible ? `<br>Країна: ${this.country}<br>ID код: ${this.idCode}` : '';
+            return this.generateDocumentDisplay([
+                `Країна: ${this.country}`,
+                `ID код: ${this.idCode}`,
+                `<button onclick="copyIdCode('${this.idCode}')">Копіювати ID код</button>`,
+                `<button onclick="toggleInfo(this, '${this.constructor.name}')">${this.infoVisible ? 'Сховати' : 'Показати'} інформацію</button>`,
+                `<button onclick="generateQR()">Згенерувати QR</button>`,
+            ]) + info;
+        }
+    }
+    // SOLID: Single Responsibility Principle
+    // SOLID: Liskov Substitution Principle
+    class DrivingLicense extends Document {
+        constructor(name, expiryDate, category, registeredVehicle, photoUrl) {
+            super(name, expiryDate, photoUrl);
+            this.category = category;
+            this.registeredVehicle = registeredVehicle;
+            this.infoVisible = false;
+        }
+        display() {
+            const info = this.infoVisible ? `<br>Категорія: ${this.category}<br>Зареєстрований ТЗ: ${this.registeredVehicle}` : '';
+            return this.generateDocumentDisplay([
+                `Категорія: ${this.category}`,
+                `Зареєстрований ТЗ: ${this.registeredVehicle}`,
+                `<button onclick="registerVehicle('${this.registeredVehicle}')">Зареєструвати ТЗ</button>`,
+                `<button onclick="toggleInfo(this, '${this.constructor.name}')">${this.infoVisible ? 'Сховати' : 'Показати'} інформацію</button>`,
+                `<button onclick="generateQR()">Згенерувати QR</button>`,
+            ]) + info;
+        }
+    }
+    // SOLID: Single Responsibility Principle
+    // SOLID: Liskov Substitution Principle
+    class MilitaryID extends Document {
+        constructor(name, expiryDate, rank, photoUrl) {
+            super(name, expiryDate, photoUrl);
+            this.rank = rank;
+            this.infoVisible = false;
+        }
+        display() {
+            const info = this.infoVisible ? `<br>Звання: ${this.rank}` : '';
+            return this.generateDocumentDisplay([
+                `Звання: ${this.rank}`,
+                `<button onclick="toggleInfo(this, '${this.constructor.name}')">${this.infoVisible ? 'Сховати' : 'Показати'} інформацію</button>`,
+                `<button onclick="generateQR()">Згенерувати QR</button>`,
+            ]) + info;
+        }
+    }
+    // Composition Over Inheritance
+    const documents = [
+        new Passport("Катерина Царук", "2026-12-31", "Україна", "123456789", "passport_photo.jpg"),
+        new DrivingLicense("Катерина Царук", "2025-06-30", "B", "Toyota Camry", "license_photo.jpeg"),
+        new MilitaryID("Катерина Царук", "2024-04-15", "Полковник", "military_id_photo.jpeg")
+    ];
+    let displayType = 'flex';
+    function renderDocuments(documents, displayType) {
+        const documentsContainer = document.getElementById("documents-container");
+        documentsContainer.innerHTML = '';
+        if (displayType === 'flex') {
+            documentsContainer.style.display = 'flex';
+            documentsContainer.style.justifyContent = 'center';
+            documentsContainer.style.alignItems = 'center';
+            documents.forEach(doc => documentsContainer.innerHTML += doc.display());
+        } else if (displayType === 'block') {
+            documentsContainer.style.display = 'block';
+            documents.forEach(doc => documentsContainer.innerHTML += `<div style="text-align: center;">${doc.display()}</div>`);
+        }
+    }
+    // SOLID: Open/Closed Principle
+    function changeOrder(order) {
+        if (order === 'asc') {
+            documents.reverse();
+        } else if (order === 'desc') {
+            documents.reverse();
+        }
+        renderDocuments(documents, displayType);
+    }
+    // Program to Interfaces not Implementations
+    function changeDisplayType() {
+        displayType = document.getElementById("display-type").value;
+        renderDocuments(documents, displayType);
+    }
+    // YAGNI: Використовується лише та функціональність, яка вже потрібна для досягнення функціональності
+    function generateQR() {
+        alert("Генерація QR-коду...");
+    }
+    function copyIdCode(idCode) {
+        const textarea = document.createElement('textarea');
+        textarea.value = idCode;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert(`Копіювання ідентифікаційного коду: ${idCode}`);
+    }
+    // YAGNI: Використовується лише та функціональність, яка вже потрібна для досягнення функціональності
+    function registerVehicle(vehicle) {
+        alert(`Зареєстрований ТЗ: ${vehicle}`);
+    }
+    // SOLID: Single Responsibility Principle
+    function toggleInfo(button, documentType) {
+        const documentIndex = documents.findIndex(doc => doc.constructor.name === documentType);
+        documents[documentIndex].infoVisible = !documents[documentIndex].infoVisible;
+        button.textContent = documents[documentIndex].infoVisible ? 'Сховати' : 'Показати';
+        renderDocuments(documents, displayType);
+    }
+    document.getElementById("asc-btn").addEventListener("click", () => changeOrder("asc"));
+    document.getElementById("desc-btn").addEventListener("click", () => changeOrder("desc"));
+    document.getElementById("display-type").addEventListener("change", changeDisplayType);
+    renderDocuments(documents, displayType);
+</script>
+</body>
+</html>
