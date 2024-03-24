@@ -1,139 +1,71 @@
 ﻿using System;
+using task2;
 
-abstract class Device
+abstract class Laptop
 {
     public abstract void DisplayInfo();
 }
-class Laptop : Device
+
+abstract class Netbook
 {
-    public override void DisplayInfo()
-    {
-        Console.Write("Laptop ");
-    }
+    public abstract void DisplayInfo();
 }
 
-class Netbook : Device
+abstract class EBook
 {
-    public override void DisplayInfo()
-    {
-        Console.Write("Netbook ");
-    }
+    public abstract void DisplayInfo();
 }
 
-class EBook : Device
+abstract class Smartphone
 {
-    public override void DisplayInfo()
-    {
-        Console.Write("EBook ");
-    }
-}
-
-class Smartphone : Device
-{
-    public override void DisplayInfo()
-    {
-        Console.Write("Smartphone ");
-    }
-}
-
-// Abstract class for device factories
-abstract class DeviceFactory
-{
-    public abstract Device CreateDevice();
-}
-
-// Concrete classes for different device factories
-class IPhoneFactory : DeviceFactory
-{
-    public override Device CreateDevice()
-    {
-        return new Smartphone();
-    }
-}
-
-class XiaomiFactory : DeviceFactory
-{
-    public override Device CreateDevice()
-    {
-        return new Laptop();
-    }
-}
-
-class GalaxyFactory : DeviceFactory
-{
-    public override Device CreateDevice()
-    {
-        return new Netbook();
-    }
+    public abstract void DisplayInfo();
 }
 
 class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Choose the type of device: (1 - Laptop, 2 - Netbook, 3 - EBook, 4 - Smartphone)");
-        int deviceType = Convert.ToInt32(Console.ReadLine());
+        Console.WriteLine("Choose a brand:");
+        Console.WriteLine("1. IProne");
+        Console.WriteLine("2. Kiaomi");
+        Console.WriteLine("3. Balaxy");
+        Console.WriteLine("4. Exit");
+        Console.Write("Enter your choice: ");
+        string choice = Console.ReadLine();
 
-        Console.WriteLine("Choose the brand of the device: (1 - IPhone, 2 - Xiaomi, 3 - Galaxy)");
-        int brandType = Convert.ToInt32(Console.ReadLine());
+        IGadgetFactory factory = null;
 
-        DeviceFactory factory = null;
-
-        // Choose factory based on brand
-        switch (brandType)
+        switch (choice)
         {
-            case 1:
-                factory = new IPhoneFactory();
+            case "1":
+                factory = new IProneFactory();
                 break;
-            case 2:
-                factory = new XiaomiFactory();
+            case "2":
+                factory = new KiaomiFactory();
                 break;
-            case 3:
-                factory = new GalaxyFactory();
+            case "3":
+                factory = new BalaxyFactory();
                 break;
+            case "4":
+                Console.WriteLine("Exiting the program...");
+                return;
             default:
-                Console.WriteLine("Invalid brand selected.");
+                Console.WriteLine("Invalid choice!");
                 return;
         }
 
-        Device device = null;
-
-        // Create device based on type
-        switch (deviceType)
+        if (factory != null)
         {
-            case 1:
-                device = new Laptop();
-                break;
-            case 2:
-                device = new Netbook();
-                break;
-            case 3:
-                device = new EBook();
-                break;
-            case 4:
-                device = new Smartphone();
-                break;
-            default:
-                Console.WriteLine("Invalid device type selected.");
-                return;
-        }
+            Laptop laptop = factory.CreateLaptop();
+            Netbook netbook = factory.CreateNetbook();
+            EBook eBook = factory.CreateEBook();
+            Smartphone smartphone = factory.CreateSmartphone();
 
-        // Display information about the created device and brand
-        Console.Write("Manufactured: ");
-        device.DisplayInfo();
-        switch (brandType)
-        {
-            case 1:
-                Console.WriteLine("IPhone");
-                break;
-            case 2:
-                Console.WriteLine("Xiaomi");
-                break;
-            case 3:
-                Console.WriteLine("Galaxy");
-                break;
-            default:
-                break;
+            Console.WriteLine($"Using {choice} factory:");
+            laptop.DisplayInfo();
+            netbook.DisplayInfo();
+            eBook.DisplayInfo();
+            smartphone.DisplayInfo();
         }
     }
 }
