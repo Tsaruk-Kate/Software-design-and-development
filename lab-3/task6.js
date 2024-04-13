@@ -71,6 +71,19 @@ class LightElementNode extends LightNode {
     }
 }
 
+class FlyweightTextFactory {
+    constructor() {
+        this._textPool = {};
+    }
+
+    getText(text) {
+        if (!this._textPool[text]) {
+            this._textPool[text] = new LightTextNode(text);
+        }
+        return this._textPool[text];
+    }
+}
+
 function readBookText(filePath) {
     try {
         return fs.readFileSync(filePath, 'utf8');
@@ -80,7 +93,7 @@ function readBookText(filePath) {
     }
 }
 
-function transformTextToHTML(text) {
+function transformTextToHTML(text, textFactory) {
     const lines = text.split('\n');
 
     let html = '';
@@ -106,7 +119,13 @@ const bookFilePath = 'C:\\ЖДТУ\\2 курс\\2 семестр\\Констру
 const bookText = readBookText(bookFilePath);
 
 if (bookText) {
-    const htmlMarkup = transformTextToHTML(bookText);
+    const textFactory = new FlyweightTextFactory(); // Створюємо фабрику тексту
+
+    const h1Text = textFactory.getText("First Header");
+    const h2Text = textFactory.getText("Second Header");
+    const pText = textFactory.getText("Paragraph text");
+
+    const htmlMarkup = transformTextToHTML(bookText, textFactory);
     console.log(htmlMarkup);
 
     const htmlTree = new LightElementNode("div", "block", "closing", ["container"]);
@@ -115,17 +134,9 @@ if (bookText) {
     const h2 = new LightElementNode("h2", "block", "closing", ["sub-title"]);
     const p = new LightElementNode("p", "block", "closing", ["paragraph"]);
 
-    const h1Text = "First Header";
-    const h2Text = "Second Header";
-    const pText = "Paragraph text";
-
-    const textH1 = new LightTextNode(h1Text);
-    const textH2 = new LightTextNode(h2Text);
-    const textP = new LightTextNode(pText);
-
-    h1.addChild(textH1);
-    h2.addChild(textH2);
-    p.addChild(textP);
+    h1.addChild(h1Text);
+    h2.addChild(h2Text);
+    p.addChild(pText);
 
     htmlTree.addChild(h1);
     htmlTree.addChild(h2);
