@@ -134,6 +134,11 @@ class LightElementNode : LightNode
         _attributes.Remove(key);
     }
 
+    public void RemoveChild(LightNode node)
+    {
+        _children.Remove(node);
+    }
+
     public override string GetOuterHtml()
     {
         string result = $"<{_tagName} class=\"{string.Join(" ", _cssClasses)}\" display=\"{_displayType}\" closing=\"{_closingType}\"";
@@ -234,7 +239,61 @@ class HtmlContext
         }
     }
 }
+// Інтерфейс команди
+interface ICommand
+{
+    void Execute(); // Метод виконання команди
+}
 
+// Команда для додавання дочірнього вузла
+class AddChildCommand : ICommand
+{
+    private LightElementNode _parent;
+    private LightNode _child;
+
+    public AddChildCommand(LightElementNode parent, LightNode child)
+    {
+        _parent = parent;
+        _child = child;
+    }
+
+    public void Execute()
+    {
+        _parent.AddChild(_child); // Додає дочірній вузол до батьківського елементу
+    }
+}
+
+// Команда для видалення дочірнього вузла
+class RemoveChildCommand : ICommand
+{
+    private LightElementNode _parent;
+    private LightNode _child;
+
+    public RemoveChildCommand(LightElementNode parent, LightNode child)
+    {
+        _parent = parent;
+        _child = child;
+    }
+
+    public void Execute()
+    {
+        _parent.RemoveChild(_child); // Видаляє дочірній вузол з батьківського елементу
+    }
+}
+
+// Виконавець команд
+class CommandInvoker
+{
+    private List<ICommand> _commands = new List<ICommand>();
+
+    public void StoreAndExecute(ICommand command)
+    {
+        _commands.Add(command); // Зберігає команду та виконує її
+        command.Execute();
+    }
+}
+
+// Головний клас програми
 class Program
 {
     static void Main(string[] args)
