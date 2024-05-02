@@ -1,79 +1,88 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-abstract class NodeLifecycleHooks
+// Interface for state
+interface IHtmlState
 {
-    // Абстрактні методи для кроків життєвого циклу
-    public abstract void OnCreated();
-    public abstract void OnInserted();
-    public abstract void OnRemoved();
-    public abstract void OnStylesApplied();
-    public abstract void OnClassListApplied();
-    public abstract void OnTextRendered();
+    void RenderHtml(LightNode node);
+    void SwitchToViewMode(LightNode node);
+    void SwitchToEditMode(LightNode node);
+}
 
-    // Шаблонний метод для виклику кроків життєвого циклу
-    public void RunLifecycleHooks()
+// Concrete state "View Mode"
+class ViewMode : IHtmlState
+{
+    public void RenderHtml(LightNode node)
     {
-        OnCreated();
-        OnInserted();
-        OnRemoved();
-        OnStylesApplied();
-        OnClassListApplied();
-        OnTextRendered();
+        Console.WriteLine(node.GetOuterHtml());
+    }
+
+    public void SwitchToViewMode(LightNode node)
+    {
+        // Already in view mode
+    }
+
+    public void SwitchToEditMode(LightNode node)
+    {
+        node.SetEditMode();
     }
 }
 
-class ElementLifecycleHooks : NodeLifecycleHooks
+// Concrete state "Edit Mode"
+class EditMode : IHtmlState
 {
-    public override void OnCreated()
+    public void RenderHtml(LightNode node)
     {
-        Console.WriteLine("Element created.");
+        Console.WriteLine(node.GetInnerHtml());
     }
 
-    public override void OnInserted()
+    public void SwitchToViewMode(LightNode node)
     {
-        Console.WriteLine("Element inserted.");
+        node.SetViewMode();
     }
 
-    public override void OnRemoved()
+    public void SwitchToEditMode(LightNode node)
     {
-        Console.WriteLine("Element removed.");
-    }
-
-    public override void OnStylesApplied()
-    {
-        Console.WriteLine("Styles applied to element.");
-    }
-
-    public override void OnClassListApplied()
-    {
-        Console.WriteLine("Class list applied to element.");
-    }
-
-    public override void OnTextRendered()
-    {
-        Console.WriteLine("Text rendered inside element.");
+        // Already in edit mode
     }
 }
 
-class LightNode
+// Abstract class LightNode
+abstract class LightNode
 {
-    public virtual string GetOuterHtml() { return ""; }
-    public virtual string GetInnerHtml() { return ""; }
+    protected IHtmlState _state;
 
-    // Додано метод для виклику хуків життєвого циклу
-    public virtual void RunLifecycleHooks() { }
+    public void SetState(IHtmlState state)
+    {
+        _state = state;
+    }
+
+    public abstract string GetOuterHtml();
+    public abstract string GetInnerHtml();
+
+    public virtual void SwitchToViewMode()
+    {
+        _state.SwitchToViewMode(this);
+    }
+
+    public virtual void SwitchToEditMode()
+    {
+        _state.SwitchToEditMode(this);
+    }
+
+    public virtual void SetEditMode() { }
+    public virtual void SetViewMode() { }
 }
 
+// Text node class
 class LightTextNode : LightNode
 {
     private string _text;
-    private NodeLifecycleHooks _lifecycleHooks;
 
     public LightTextNode(string text)
     {
         _text = text;
-        _lifecycleHooks = new ElementLifecycleHooks();
+        SetState(new ViewMode());
     }
 
     public override string GetOuterHtml()
@@ -85,13 +94,9 @@ class LightTextNode : LightNode
     {
         return _text;
     }
-
-    public override void RunLifecycleHooks()
-    {
-        _lifecycleHooks.RunLifecycleHooks();
-    }
 }
 
+// Element node class
 class LightElementNode : LightNode
 {
     private string _tagName;
@@ -99,7 +104,7 @@ class LightElementNode : LightNode
     private string _closingType;
     private List<LightNode> _children;
     private List<string> _cssClasses;
-    private NodeLifecycleHooks _lifecycleHooks;
+    private Dictionary<string, string> _attributes;
 
     public LightElementNode(string tagName, string displayType, string closingType, List<string> cssClasses)
     {
@@ -108,26 +113,54 @@ class LightElementNode : LightNode
         _closingType = closingType;
         _cssClasses = cssClasses;
         _children = new List<LightNode>();
-        _lifecycleHooks = new ElementLifecycleHooks();
+        _attributes = new Dictionary<string, string>();
+        SetState(new ViewMode());
     }
 
     public void AddChild(LightNode node)
     {
-        _children.Add(node);
+        if (node != null)
+            _children.Add(node);
+    }
+
+    // Methods for adding and removing attributes
+    public void AddAttribute(string key, string value)
+    {
+        _attributes[key] = value;
+    }
+
+    public void RemoveAttribute(string key)
+    {
+        _attributes.Remove(key);
+    }
+
+    public void RemoveChild(LightNode node)
+    {
+        _children.Remove(node);
     }
 
     public override string GetOuterHtml()
     {
-        RunLifecycleHooks(); // Виклик хуків перед отриманням HTML
-        string result = $"<{_tagName} class=\"{string.Join(" ", _cssClasses)}\" display=\"{_displayType}\" closing=\"{_closingType}\">\n";
+        string result = $"<{_tagName} class=\"{string.Join(" ", _cssClasses)}\" display=\"{_displayType}\" closing=\"{_closingType}\"";
+
+        // Adding attributes to HTML output
+        foreach (var attribute in _attributes)
+        {
+            result += $" {attribute.Key}=\"{attribute.Value}\"";
+        }
+
+        result += ">\n";
+
         foreach (var child in _children)
         {
             result += $"\t{child.GetOuterHtml()}\n";
         }
+
         if (_closingType == "closing")
         {
             result += $"</{_tagName}>";
         }
+
         return result;
     }
 
@@ -141,49 +174,136 @@ class LightElementNode : LightNode
         return result;
     }
 
-    public override void RunLifecycleHooks()
+    public override void SetEditMode()
     {
-        _lifecycleHooks.RunLifecycleHooks();
+        SetState(new EditMode());
+        foreach (var child in _children)
+        {
+            child.SetEditMode();
+        }
+    }
+
+    public override void SetViewMode()
+    {
+        SetState(new ViewMode());
+        foreach (var child in _children)
+        {
+            child.SetViewMode();
+        }
     }
 }
 
-class TextNodeLifecycleHooks : NodeLifecycleHooks
+// Context class
+class HtmlContext
 {
-    public override void OnCreated()
+    private IHtmlState _state;
+
+    public HtmlContext()
     {
-        Console.WriteLine("Text node created.");
+        // Initial state - view mode
+        TransitionTo(new ViewMode());
     }
 
-    public override void OnInserted()
+    // Transitioning states
+    public void TransitionTo(IHtmlState state)
     {
-        Console.WriteLine("Text node inserted.");
+        Console.WriteLine($"Context: Transition to {state.GetType().Name}.");
+        _state = state;
     }
 
-    public override void OnRemoved()
+    // Method to render HTML
+    public void RenderHtml(LightNode node)
     {
-        Console.WriteLine("Text node removed.");
+        _state.RenderHtml(node);
     }
 
-    public override void OnStylesApplied()
+    // Methods to add and remove attributes in edit mode
+    public void AddAttribute(LightElementNode node, string key, string value)
     {
-        Console.WriteLine("Styles applied to text node.");
+        if (_state is EditMode)
+        {
+            node.AddAttribute(key, value);
+        }
+        else
+        {
+            Console.WriteLine("Attributes can only be added in edit mode.");
+        }
     }
 
-    public override void OnClassListApplied()
+    public void RemoveAttribute(LightElementNode node, string key)
     {
-        Console.WriteLine("Class list applied to text node.");
-    }
-
-    public override void OnTextRendered()
-    {
-        Console.WriteLine("Text node rendered.");
+        if (_state is EditMode)
+        {
+            node.RemoveAttribute(key);
+        }
+        else
+        {
+            Console.WriteLine("Attributes can only be removed in edit mode.");
+        }
     }
 }
 
+// Command interface
+interface ICommand
+{
+    void Execute();
+}
+
+// Command for adding a child node
+class AddChildCommand : ICommand
+{
+    private LightElementNode _parent;
+    private LightNode _child;
+
+    public AddChildCommand(LightElementNode parent, LightNode child)
+    {
+        _parent = parent;
+        _child = child;
+    }
+
+    public void Execute()
+    {
+        _parent.AddChild(_child); // Adds a child node to the parent element
+    }
+}
+
+// Command for removing a child node
+class RemoveChildCommand : ICommand
+{
+    private LightElementNode _parent;
+    private LightNode _child;
+
+    public RemoveChildCommand(LightElementNode parent, LightNode child)
+    {
+        _parent = parent;
+        _child = child;
+    }
+
+    public void Execute()
+    {
+        _parent.RemoveChild(_child); // Removes a child node from the parent element
+    }
+}
+
+// Command executor
+class CommandInvoker
+{
+    private List<ICommand> _commands = new List<ICommand>();
+
+    public void StoreAndExecute(ICommand command)
+    {
+        _commands.Add(command); // Stores and executes the command
+        command.Execute();
+    }
+}
+
+// Main program class
 class Program
 {
     static void Main(string[] args)
     {
+        HtmlContext context = new HtmlContext();
+
         LightElementNode header = new LightElementNode("h1", "block", "closing", new List<string>());
         LightTextNode headerText = new LightTextNode("Welcome to my page!");
         header.AddChild(headerText);
@@ -203,9 +323,34 @@ class Program
         tableData2.AddChild(dataText2);
         tableRow1.AddChild(tableData2);
 
-        header.RunLifecycleHooks();
-        Console.WriteLine(header.GetOuterHtml());
-        table.RunLifecycleHooks();
-        Console.WriteLine(table.GetOuterHtml());
+        // Viewing HTML
+        context.RenderHtml(header);
+        context.RenderHtml(table);
+
+        // Switching to edit mode
+        context.TransitionTo(new EditMode());
+
+        // Editing HTML
+        context.RenderHtml(header);
+        context.RenderHtml(table);
+
+        // Switching to view mode
+        context.TransitionTo(new ViewMode());
+
+        // Re-viewing HTML
+        context.RenderHtml(header);
+        context.RenderHtml(table);
+
+        // Changing mode among elements
+        table.SetEditMode();
+
+        // Adding and removing attributes
+        context.AddAttribute(table, "border", "1");
+        context.AddAttribute(table, "cellpadding", "5");
+        context.RemoveAttribute(table, "class");
+
+        // Re-viewing HTML
+        context.RenderHtml(header);
+        context.RenderHtml(table);
     }
 }
