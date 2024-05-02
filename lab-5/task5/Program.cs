@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-// Інтерфейс для стану
+// Interface for state
 interface IHtmlState
 {
     void RenderHtml(LightNode node);
@@ -9,7 +9,7 @@ interface IHtmlState
     void SwitchToEditMode(LightNode node);
 }
 
-// Конкретний стан "Режим перегляду"
+// Concrete state "View Mode"
 class ViewMode : IHtmlState
 {
     public void RenderHtml(LightNode node)
@@ -28,7 +28,7 @@ class ViewMode : IHtmlState
     }
 }
 
-// Конкретний стан "Режим редагування"
+// Concrete state "Edit Mode"
 class EditMode : IHtmlState
 {
     public void RenderHtml(LightNode node)
@@ -47,7 +47,7 @@ class EditMode : IHtmlState
     }
 }
 
-// Абстрактний клас LightNode
+// Abstract class LightNode
 abstract class LightNode
 {
     protected IHtmlState _state;
@@ -74,7 +74,7 @@ abstract class LightNode
     public virtual void SetViewMode() { }
 }
 
-// Клас текстового вузла
+// Text node class
 class LightTextNode : LightNode
 {
     private string _text;
@@ -96,7 +96,7 @@ class LightTextNode : LightNode
     }
 }
 
-// Клас вузла елемента
+// Element node class
 class LightElementNode : LightNode
 {
     private string _tagName;
@@ -104,7 +104,7 @@ class LightElementNode : LightNode
     private string _closingType;
     private List<LightNode> _children;
     private List<string> _cssClasses;
-    private Dictionary<string, string> _attributes; // Додано словник для зберігання атрибутів
+    private Dictionary<string, string> _attributes; // Added dictionary for attribute storage
 
     public LightElementNode(string tagName, string displayType, string closingType, List<string> cssClasses)
     {
@@ -113,7 +113,7 @@ class LightElementNode : LightNode
         _closingType = closingType;
         _cssClasses = cssClasses;
         _children = new List<LightNode>();
-        _attributes = new Dictionary<string, string>(); // Ініціалізація словника атрибутів
+        _attributes = new Dictionary<string, string>(); // Initializing attribute dictionary
         SetState(new ViewMode());
     }
 
@@ -123,7 +123,7 @@ class LightElementNode : LightNode
             _children.Add(node);
     }
 
-    // Методи для додавання та видалення атрибутів
+    // Methods for adding and removing attributes
     public void AddAttribute(string key, string value)
     {
         _attributes[key] = value;
@@ -138,7 +138,7 @@ class LightElementNode : LightNode
     {
         string result = $"<{_tagName} class=\"{string.Join(" ", _cssClasses)}\" display=\"{_displayType}\" closing=\"{_closingType}\"";
 
-        // Додавання атрибутів до виводу HTML
+        // Adding attributes to HTML output
         foreach (var attribute in _attributes)
         {
             result += $" {attribute.Key}=\"{attribute.Value}\"";
@@ -185,31 +185,31 @@ class LightElementNode : LightNode
     }
 }
 
-// Клас контексту
+// Context class
 class HtmlContext
 {
     private IHtmlState _state;
 
     public HtmlContext()
     {
-        // Початковий стан - режим перегляду
+        // Initial state - view mode
         TransitionTo(new ViewMode());
     }
 
-    // Змінюємо стан
+    // Transitioning states
     public void TransitionTo(IHtmlState state)
     {
         Console.WriteLine($"Context: Transition to {state.GetType().Name}.");
         _state = state;
     }
 
-    // Метод відображення HTML
+    // Method to render HTML
     public void RenderHtml(LightNode node)
     {
         _state.RenderHtml(node);
     }
 
-    // Методи для додавання та видалення атрибутів в режимі редагування
+    // Methods to add and remove attributes in edit mode
     public void AddAttribute(LightElementNode node, string key, string value)
     {
         if (_state is EditMode)
@@ -260,33 +260,33 @@ class Program
         tableData2.AddChild(dataText2);
         tableRow1.AddChild(tableData2);
 
-        // Перегляд HTML
+        // Viewing HTML
         context.RenderHtml(header);
         context.RenderHtml(table);
 
-        // Переключення в режим редагування
+        // Switching to edit mode
         context.TransitionTo(new EditMode());
 
-        // Редагування HTML
+        // Editing HTML
         context.RenderHtml(header);
         context.RenderHtml(table);
 
-        // Переключення в режим перегляду
+        // Switching to view mode
         context.TransitionTo(new ViewMode());
 
-        // Повторний перегляд HTML
+        // Re-viewing HTML
         context.RenderHtml(header);
         context.RenderHtml(table);
 
-        // Зміна режиму серед елементів
+        // Changing mode among elements
         table.SetEditMode();
 
-        // Додавання та видалення атрибутів
+        // Adding and removing attributes
         context.AddAttribute(table, "border", "1");
         context.AddAttribute(table, "cellpadding", "5");
         context.RemoveAttribute(table, "class");
 
-        // Повторний перегляд HTML
+        // Re-viewing HTML
         context.RenderHtml(header);
         context.RenderHtml(table);
     }
