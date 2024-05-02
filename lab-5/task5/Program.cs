@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 // Interface for state
@@ -104,7 +104,7 @@ class LightElementNode : LightNode
     private string _closingType;
     private List<LightNode> _children;
     private List<string> _cssClasses;
-    private Dictionary<string, string> _attributes; // Added dictionary for attribute storage
+    private Dictionary<string, string> _attributes;
 
     public LightElementNode(string tagName, string displayType, string closingType, List<string> cssClasses)
     {
@@ -113,7 +113,7 @@ class LightElementNode : LightNode
         _closingType = closingType;
         _cssClasses = cssClasses;
         _children = new List<LightNode>();
-        _attributes = new Dictionary<string, string>(); // Initializing attribute dictionary
+        _attributes = new Dictionary<string, string>();
         SetState(new ViewMode());
     }
 
@@ -150,14 +150,17 @@ class LightElementNode : LightNode
         }
 
         result += ">\n";
+
         foreach (var child in _children)
         {
             result += $"\t{child.GetOuterHtml()}\n";
         }
+
         if (_closingType == "closing")
         {
             result += $"</{_tagName}>";
         }
+
         return result;
     }
 
@@ -239,13 +242,14 @@ class HtmlContext
         }
     }
 }
-// Інтерфейс команди
+
+// Command interface
 interface ICommand
 {
-    void Execute(); // Метод виконання команди
+    void Execute();
 }
 
-// Команда для додавання дочірнього вузла
+// Command for adding a child node
 class AddChildCommand : ICommand
 {
     private LightElementNode _parent;
@@ -259,11 +263,11 @@ class AddChildCommand : ICommand
 
     public void Execute()
     {
-        _parent.AddChild(_child); // Додає дочірній вузол до батьківського елементу
+        _parent.AddChild(_child); // Adds a child node to the parent element
     }
 }
 
-// Команда для видалення дочірнього вузла
+// Command for removing a child node
 class RemoveChildCommand : ICommand
 {
     private LightElementNode _parent;
@@ -277,23 +281,23 @@ class RemoveChildCommand : ICommand
 
     public void Execute()
     {
-        _parent.RemoveChild(_child); // Видаляє дочірній вузол з батьківського елементу
+        _parent.RemoveChild(_child); // Removes a child node from the parent element
     }
 }
 
-// Виконавець команд
+// Command executor
 class CommandInvoker
 {
     private List<ICommand> _commands = new List<ICommand>();
 
     public void StoreAndExecute(ICommand command)
     {
-        _commands.Add(command); // Зберігає команду та виконує її
+        _commands.Add(command); // Stores and executes the command
         command.Execute();
     }
 }
 
-// Головний клас програми
+// Main program class
 class Program
 {
     static void Main(string[] args)
